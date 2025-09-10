@@ -16,8 +16,8 @@ config = LoraConfig(
 model = Qwen2VLForConditionalGeneration.from_pretrained(
     "./Qwen/Qwen2-VL-2B-Instruct", torch_dtype="auto", device_map="auto"
 )
-model = PeftModel.from_pretrained(model, model_id="./output/Qwen2-VL-2B/checkpoint-62", config=config)
-processor = AutoProcessor.from_pretrained("./Qwen/Qwen2-VL-2B-Instruct")
+model = PeftModel.from_pretrained(model, model_id="./output/Qwen2-VL-7B/checkpoint-62", config=config)
+processor = AutoProcessor.from_pretrained("./Qwen/Qwen2-VL-7B-Instruct")
 
 messages = [
     {
@@ -27,7 +27,7 @@ messages = [
                 "type": "image",
                 "image": "测试图像路径",
             },
-            {"type": "text", "text": "COCO Yes:"},
+            {"type": "text", "text": "FISH Yes:"},
         ],
     }
 ]

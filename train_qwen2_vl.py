@@ -35,14 +35,14 @@ def process_func(example):
                     "resized_height": 280,
                     "resized_width": 280,
                 },
-                {"type": "text", "text": "COCO Yes:"},
+                {"type": "text", "text": "FISH Yes:"},
             ],
         }
     ]
     text = processor.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )  # 获取文本
-    image_inputs, video_inputs = process_vision_info(messages)  # 获取数据数据（预处理过）
+    image_inputs, video_inputs = process_vision_info(messages)  #  
     inputs = processor(
         text=[text],
         images=image_inputs,
@@ -50,7 +50,7 @@ def process_func(example):
         padding=True,
         return_tensors="pt",
     )
-    inputs = {key: value.tolist() for key, value in inputs.items()} #tensor -> list,为了方便拼接
+    inputs = {key: value.tolist() for key, value in inputs.items()} # 
     instruction = inputs
 
     response = tokenizer(f"{output_content}", add_special_tokens=False)
@@ -107,18 +107,16 @@ def predict(messages, model):
     return output_text[0]
 
 
-# 在modelscope上下载Qwen2-VL模型到本地目录下
-model_dir = snapshot_download("Qwen/Qwen2-VL-2B-Instruct", cache_dir="./", revision="master")
+#  下载模型 
+model_dir = snapshot_download("Qwen/Qwen2-VL-7B-Instruct", cache_dir="./", revision="master")
 
-# 使用Transformers加载模型权重
-tokenizer = AutoTokenizer.from_pretrained("./Qwen/Qwen2-VL-2B-Instruct/", use_fast=False, trust_remote_code=True)
-processor = AutoProcessor.from_pretrained("./Qwen/Qwen2-VL-2B-Instruct")
+#  
+tokenizer = AutoTokenizer.from_pretrained("./Qwen/Qwen2-VL-7B-Instruct/", use_fast=False, trust_remote_code=True)
+processor = AutoProcessor.from_pretrained("./Qwen/Qwen2-VL-7B-Instruct")
 
-model = Qwen2VLForConditionalGeneration.from_pretrained("./Qwen/Qwen2-VL-2B-Instruct/", device_map="auto", torch_dtype=torch.bfloat16, trust_remote_code=True,)
-model.enable_input_require_grads()  # 开启梯度检查点时，要执行该方法
+model = Qwen2VLForConditionalGeneration.from_pretrained("./Qwen/Qwen2-VL-7B-Instruct/", device_map="auto", torch_dtype=torch.bfloat16, trust_remote_code=True,)
+model.enable_input_require_grads()   
 
-# 处理数据集：读取json文件
-# 拆分成训练集和测试集，保存为data_vl_train.json和data_vl_test.json
 train_json_path = "data_vl.json"
 with open(train_json_path, 'r') as f:
     data = json.load(f)
@@ -148,9 +146,9 @@ config = LoraConfig(
 # 获取LoRA模型
 peft_model = get_peft_model(model, config)
 
-# 配置训练参数
+# 配置 参数
 args = TrainingArguments(
-    output_dir="./output/Qwen2-VL-2B",
+    output_dir="./output/Qwen2-VL-7B",
     per_device_train_batch_size=4,
     gradient_accumulation_steps=4,
     logging_steps=10,
@@ -163,15 +161,15 @@ args = TrainingArguments(
     report_to="none",
 )
         
-# 设置SwanLab回调
+# 
 swanlab_callback = SwanLabCallback(
     project="Qwen2-VL-finetune",
-    experiment_name="qwen2-vl-coco2014",
+    experiment_name="qwen2-vl-fish2025",
     config={
-        "model": "https://modelscope.cn/models/Qwen/Qwen2-VL-2B-Instruct",
-        "dataset": "https://modelscope.cn/datasets/modelscope/coco_2014_caption/quickstart",
+        "model": "https://modelscope.cn/models/Qwen/Qwen2-VL-7B-Instruct",
+        "dataset": "https://modelscope.cn/datasets/modelscope/fish_2025_caption/quickstart",
         "github": "https://github.com/datawhalechina/self-llm",
-        "prompt": "COCO Yes: ",
+        "prompt": "FISH Yes: ",
         "train_data_number": len(train_data),
         "lora_rank": 64,
         "lora_alpha": 16,
@@ -204,7 +202,7 @@ val_config = LoraConfig(
 )
 
 # 获取测试模型
-val_peft_model = PeftModel.from_pretrained(model, model_id="./output/Qwen2-VL-2B/checkpoint-62", config=val_config)
+val_peft_model = PeftModel.from_pretrained(model, model_id="./output/Qwen2-VL-7B/checkpoint-62", config=val_config)
 
 # 读取测试数据
 with open("data_vl_test.json", "r") as f:
@@ -225,7 +223,7 @@ for item in test_dataset:
             },
             {
             "type": "text",
-            "text": "COCO Yes:"
+            "text": "FISH Yes:"
             }
         ]}]
     
@@ -236,6 +234,5 @@ for item in test_dataset:
     test_image_list.append(swanlab.Image(origin_image_path, caption=response))
 
 swanlab.log({"Prediction": test_image_list})
-
-# 在Jupyter Notebook中运行时要停止SwanLab记录，需要调用swanlab.finish()
+ 
 swanlab.finish()

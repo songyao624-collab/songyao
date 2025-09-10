@@ -2,7 +2,7 @@ import pandas as pd
 import json
 
 # 载入CSV文件
-df = pd.read_csv('./coco-2024-dataset.csv')
+df = pd.read_csv('./fish-2025-dataset.csv')
 conversations = []
 
 # 添加对话数据
@@ -12,7 +12,7 @@ for i in range(len(df)):
         "conversations": [
             {
                 "from": "user",
-                "value": f"COCO Yes: <|vision_start|>{df.iloc[i]['image_path']}<|vision_end|>"
+                "value": f"FISH Yes: <|vision_start|>{df.iloc[i]['image_path']}<|vision_end|>"
             },
             {
                 "from": "assistant", 
