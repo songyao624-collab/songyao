@@ -1,11 +1,11 @@
 import pandas as pd
 import json
 
-# 载入CSV文件
+# Load CSV file
 df = pd.read_csv('./fish-2025-dataset.csv')
 conversations = []
 
-# 添加对话数据
+# Add conversation data
 for i in range(len(df)):
     conversations.append({
         "id": f"identity_{i+1}",
@@ -21,6 +21,6 @@ for i in range(len(df)):
         ]
     })
 
-# 保存为Json
+# Save as Json
 with open('data_vl.json', 'w', encoding='utf-8') as f:
     json.dump(conversations, f, ensure_ascii=False, indent=2)

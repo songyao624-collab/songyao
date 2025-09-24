@@ -6,9 +6,9 @@ config = LoraConfig(
     task_type=TaskType.CAUSAL_LM,
     target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
     inference_mode=True,
-    r=64,  # Lora 秩
-    lora_alpha=16,  # Lora alaph，具体作用参见 Lora 原理
-    lora_dropout=0.05,  # Dropout 比例
+    r=64,  # Lora
+    lora_alpha=16,  # Lora alaph
+    lora_dropout=0.05,  # Dropout 
     bias="none",
 )
 
@@ -25,7 +25,7 @@ messages = [
         "content": [
             {
                 "type": "image",
-                "image": "测试图像路径",
+                "image": "Test image path",
             },
             {"type": "text", "text": "FISH Yes:"},
         ],

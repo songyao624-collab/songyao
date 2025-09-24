@@ -17,14 +17,14 @@ import json
 
 def process_func(example):
     """
-    将数据集进行预处理
+    Preprocess the dataset
     """
     MAX_LENGTH = 8192
     input_ids, attention_mask, labels = [], [], []
     conversation = example["conversations"]
     input_content = conversation[0]["value"]
     output_content = conversation[1]["value"]
-    file_path = input_content.split("<|vision_start|>")[1].split("<|vision_end|>")[0]  # 获取图像路径
+    file_path = input_content.split("<|vision_start|>")[1].split("<|vision_end|>")[0]  # Obtain image path
     messages = [
         {
             "role": "user",
@@ -41,7 +41,7 @@ def process_func(example):
     ]
     text = processor.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
-    )  # 获取文本
+    )  # Get the text.
     image_inputs, video_inputs = process_vision_info(messages)  #  
     inputs = processor(
         text=[text],
@@ -66,7 +66,7 @@ def process_func(example):
             + response["input_ids"]
             + [tokenizer.pad_token_id]
     )
-    if len(input_ids) > MAX_LENGTH:  # 做一个截断
+    if len(input_ids) > MAX_LENGTH:  # Make a truncation.
         input_ids = input_ids[:MAX_LENGTH]
         attention_mask = attention_mask[:MAX_LENGTH]
         labels = labels[:MAX_LENGTH]
@@ -75,13 +75,13 @@ def process_func(example):
     attention_mask = torch.tensor(attention_mask)
     labels = torch.tensor(labels)
     inputs['pixel_values'] = torch.tensor(inputs['pixel_values'])
-    inputs['image_grid_thw'] = torch.tensor(inputs['image_grid_thw']).squeeze(0)  #由（1,h,w)变换为（h,w）
+    inputs['image_grid_thw'] = torch.tensor(inputs['image_grid_thw']).squeeze(0)  # Transform from (1,h,w) to (h,w)
     return {"input_ids": input_ids, "attention_mask": attention_mask, "labels": labels,
             "pixel_values": inputs['pixel_values'], "image_grid_thw": inputs['image_grid_thw']}
 
 
 def predict(messages, model):
-    # 准备推理
+    # Prepare for reasoning.
     text = processor.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
@@ -95,7 +95,7 @@ def predict(messages, model):
     )
     inputs = inputs.to("cuda")
 
-    # 生成输出
+    # Generate output
     generated_ids = model.generate(**inputs, max_new_tokens=128)
     generated_ids_trimmed = [
         out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
@@ -107,10 +107,9 @@ def predict(messages, model):
     return output_text[0]
 
 
-#  下载模型 
+#  Download the model
 model_dir = snapshot_download("Qwen/Qwen2-VL-7B-Instruct", cache_dir="./", revision="master")
-
-#  
+ 
 tokenizer = AutoTokenizer.from_pretrained("./Qwen/Qwen2-VL-7B-Instruct/", use_fast=False, trust_remote_code=True)
 processor = AutoProcessor.from_pretrained("./Qwen/Qwen2-VL-7B-Instruct")
 
@@ -132,21 +131,21 @@ with open("data_vl_test.json", "w") as f:
 train_ds = Dataset.from_json("data_vl_train.json")
 train_dataset = train_ds.map(process_func)
 
-# 配置LoRA
+# Configure LoRA
 config = LoraConfig(
     task_type=TaskType.CAUSAL_LM,
     target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-    inference_mode=False,  # 训练模式
-    r=64,  # Lora 秩
-    lora_alpha=16,  # Lora alaph，具体作用参见 Lora 原理
-    lora_dropout=0.05,  # Dropout 比例
+    inference_mode=False,  # training mode
+    r=64,  # Lora 
+    lora_alpha=16,  # Lora alaph
+    lora_dropout=0.05,  # Dropout
     bias="none",
 )
 
-# 获取LoRA模型
+# Get the LoRA model
 peft_model = get_peft_model(model, config)
 
-# 配置 参数
+# Configuration Parameters
 args = TrainingArguments(
     output_dir="./output/Qwen2-VL-7B",
     per_device_train_batch_size=4,
@@ -177,7 +176,7 @@ swanlab_callback = SwanLabCallback(
     },
 )
 
-# 配置Trainer
+# Configuration Trainer
 trainer = Trainer(
     model=peft_model,
     args=args,
@@ -186,32 +185,32 @@ trainer = Trainer(
     callbacks=[swanlab_callback],
 )
 
-# 开启模型训练
+# Start model training
 trainer.train()
 
-# ====================测试模式===================
-# 配置测试参数
+# ====================test mode===================
+# Configure test parameters
 val_config = LoraConfig(
     task_type=TaskType.CAUSAL_LM,
     target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-    inference_mode=True,  # 训练模式
-    r=64,  # Lora 秩
-    lora_alpha=16,  # Lora alaph，具体作用参见 Lora 原理
-    lora_dropout=0.05,  # Dropout 比例
+    inference_mode=True,  # training mode
+    r=64,  # Lora
+    lora_alpha=16,  # Lora alaph
+    lora_dropout=0.05,  # Dropout
     bias="none",
 )
 
-# 获取测试模型
+# Obtain the test model
 val_peft_model = PeftModel.from_pretrained(model, model_id="./output/Qwen2-VL-7B/checkpoint-62", config=val_config)
 
-# 读取测试数据
+# Read test data
 with open("data_vl_test.json", "r") as f:
     test_dataset = json.load(f)
 
 test_image_list = []
 for item in test_dataset:
     input_image_prompt = item["conversations"][0]["value"]
-    # 去掉前后的<|vision_start|>和<|vision_end|>
+    # Remove the <|vision_start|> and <|vision_end|> at the beginning and end
     origin_image_path = input_image_prompt.split("<|vision_start|>")[1].split("<|vision_end|>")[0]
     
     messages = [{

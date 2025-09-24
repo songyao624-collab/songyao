@@ -1,54 +1,54 @@
-# 导入所需的库
+# Import the required libraries
 from modelscope.msdatasets import MsDataset
 import os
 import pandas as pd
 
 MAX_DATA_NUMBER = 500
 
-# 检查目录是否已存在
+# Check whether the directory already exists
 if not os.path.exists('fish_2025_caption'):
     
     ds =  MsDataset.load('modelscope/fish_2025_caption', subset_name='fish_2025_caption', split='train')
     print(len(ds))
-    # 设置处理的图片数量上限
+    # Set the upper limit of processed image quantity
     total = min(MAX_DATA_NUMBER, len(ds))
 
-    # 创建保存图片的目录
+    # Create a directory to save images
     os.makedirs('fish_2025_caption', exist_ok=True)
 
-    # 初始化存储图片路径和描述的列表
+    # Initialize the list of stored image paths and descriptions
     image_paths = []
     captions = []
 
     for i in range(total):
-        # 获取每个样本的信息
+        # Obtain information for each sample
         item = ds[i]
         image_id = item['image_id']
         caption = item['caption']
         image = item['image']
 
-        # 保存图片并记录路径
+        # Save the image and record the path
         image_path = os.path.abspath(f'fish_2025_caption/{image_id}.jpg')
         image.save(image_path)
 
-        # 将路径和描述添加到列表中
+        # Add the path and description to the list
         image_paths.append(image_path)
         captions.append(caption)
 
-        # 每处理50张图片打印一次进度
+        # Print the progress once every 50 images processed
         if (i + 1) % 50 == 0:
             print(f'Processing {i+1}/{total} images ({(i+1)/total*100:.1f}%)')
 
-    # 将图片路径和描述保存为CSV文件
+    # Save the image paths and descriptions as a CSV file
     df = pd.DataFrame({
         'image_path': image_paths,
         'caption': captions
     })
 
-    # 将数据保存为CSV文件
+    # Save data as a CSV file
     df.to_csv('./fish-2025-dataset.csv', index=False)
 
-    print(f'数据处理完成，共处理了{total}张图片')
+    print(f'Data processing completed. A total of {total} images were processed')
 
 else:
-    print('fish_2025_caption目录已存在,跳过数据处理步骤')
+    print('The directory "fish_2025_caption" already exists, skipping data processing step')
